@@ -17,6 +17,9 @@ export const EventDetail = () => {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [justUpdatedSeatIds, setJustUpdatedSeatIds] = useState([]);
   
+  // Calculate if event is in the past
+  const isPastEvent = event ? new Date(event.eventDate) <= new Date() : false;
+  
   // Waitlist states
   const [waitlistEntry, setWaitlistEntry] = useState(null);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
@@ -79,6 +82,7 @@ export const EventDetail = () => {
   useEventWebSocket(id, handleSeatUpdate);
 
   const handleSeatSelect = (seat) => {
+    if (isPastEvent) return;
     const isAlreadySelected = selectedSeats.some((s) => s.id === seat.id);
     if (isAlreadySelected) {
       setSelectedSeats((prev) => prev.filter((s) => s.id !== seat.id));
@@ -88,6 +92,10 @@ export const EventDetail = () => {
   };
 
   const handleBookSeats = async () => {
+    if (isPastEvent) {
+      setError('This event has already started or ended. Booking is closed.');
+      return;
+    }
     if (!isAuthenticated) {
       navigate('/login');
       return;
@@ -127,6 +135,10 @@ export const EventDetail = () => {
   };
 
   const handleJoinWaitlist = async () => {
+    if (isPastEvent) {
+      setError('This event has already started or ended. Waitlist registration is closed.');
+      return;
+    }
     if (!isAuthenticated) {
       navigate('/login');
       return;
@@ -283,6 +295,24 @@ export const EventDetail = () => {
         </div>
       )}
 
+      {isPastEvent && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid var(--color-booked)',
+          color: 'var(--color-booked)',
+          borderRadius: '6px',
+          padding: '12px',
+          fontSize: '0.9rem',
+          marginBottom: '24px'
+        }}>
+          <AlertCircle size={18} />
+          <span>Booking Closed: This event has already started or completed. No new seats can be selected or booked.</span>
+        </div>
+      )}
+
       {/* Main Layout: Seat Map on Left, Sidebar on Right */}
       {event.status === 'CANCELLED' ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: '48px 24px', borderLeft: '4px solid var(--color-booked)' }}>
@@ -290,11 +320,13 @@ export const EventDetail = () => {
           <h3>Event Cancelled</h3>
           <p className="text-muted" style={{ marginTop: '4px' }}>This event has been cancelled. If you held tickets, refunds will be processed.</p>
         </div>
-      ) : hasSeatsAvailable ? (
+      ) : (
         <div className="grid-cols-1-2">
           {/* Left: Seat Map Grid */}
           <div>
-            <h2 style={{ marginBottom: '16px', fontSize: '1.4rem' }}>Select Your Seats</h2>
+            <h2 style={{ marginBottom: '16px', fontSize: '1.4rem' }}>
+              {isPastEvent ? 'Seating Layout (Read-Only)' : 'Select Your Seats'}
+            </h2>
             <SeatMap
               seats={seats}
               selectedSeatIds={selectedSeats.map((s) => s.id)}
@@ -306,148 +338,167 @@ export const EventDetail = () => {
 
           {/* Right: Booking Panel */}
           <div>
-            <div className="glass-card" style={{ position: 'sticky', top: '90px' }}>
-              <h3 style={{ borderBottom: '1px solid var(--border-main)', paddingBottom: '12px', marginBottom: '16px' }}>
-                Booking Summary
-              </h3>
-
-              {selectedSeats.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-                  <Ticket size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
-                  <p>No seats selected yet</p>
-                  <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Click available seats on the map to select (up to 10).</p>
-                </div>
-              ) : (
-                <div>
-                  {/* Selected Seats List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '200px', overflowY: 'auto' }}>
-                    {selectedSeats.map((seat) => (
-                      <div key={seat.id} className="flex-between" style={{
-                        padding: '10px 14px',
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--border-main)',
-                        borderRadius: '6px'
-                      }}>
-                        <div>
-                          <span style={{ fontWeight: 700 }}>Seat {seat.seatNumber}</span>
-                          <span style={{ fontSize: '0.75rem', marginLeft: '8px' }} className={
-                            seat.category === 'VIP' ? 'text-warning' : seat.category === 'PREMIUM' ? 'text-accent' : 'text-muted'
-                          }>
-                            ({seat.category})
-                          </span>
-                        </div>
-                        <span className="mono-text" style={{ fontWeight: 600 }}>₹{seat.price}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Total pricing */}
-                  <div style={{
-                    borderTop: '1px solid var(--border-main)',
-                    paddingTop: '16px',
-                    marginBottom: '24px'
-                  }}>
-                    <div className="flex-between" style={{ marginBottom: '8px' }}>
-                      <span className="text-muted">Total Tickets</span>
-                      <span>{selectedSeats.length}</span>
-                    </div>
-                    <div className="flex-between">
-                      <span style={{ fontWeight: 600 }}>Grand Total</span>
-                      <span className="mono-text" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>
-                        ₹{totalPrice.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleBookSeats}
-                    loading={bookingLoading}
-                    style={{ width: '100%', padding: '14px' }}
-                  >
-                    {isAuthenticated ? 'Confirm & Hold Seats' : 'Login to Book Seats'}
-                  </Button>
-                  
-                  <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
-                    <Clock size={12} />
-                    Holding seats creates a temporary 10-minute hold.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Event Sold Out — Waitlist options */
-        <div className="glass-card" style={{
-          padding: '40px',
-          textAlign: 'center',
-          maxWidth: '600px',
-          margin: '0 auto',
-          borderLeft: '4px solid var(--accent)'
-        }}>
-          <Info size={36} className="text-accent" style={{ marginBottom: '16px' }} />
-          <h2>This Event is Sold Out</h2>
-          <p className="text-muted" style={{ marginTop: '8px', marginBottom: '24px', fontSize: '1rem', lineHeight: '1.5' }}>
-            All physical seats are currently booked or held by other users. Join our automated waitlist to secure a spot if anyone cancels or their hold expires.
-          </p>
-
-          {waitlistEntry ? (
-            <div style={{
-              background: 'rgba(99, 102, 241, 0.08)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              borderRadius: '8px',
-              padding: '24px',
-              maxWidth: '400px',
-              margin: '0 auto'
-            }}>
-              {waitlistEntry.status === 'OFFERED' ? (
-                <div>
-                  <span className="badge badge-warning" style={{ marginBottom: '8px' }}>Seat Offered!</span>
-                  <p style={{ fontWeight: 600 }}>We have offered you Seat {waitlistEntry.offeredSeatNumber}!</p>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Go to your Bookings page immediately to accept the offer before it expires.
-                  </p>
-                  <Button
-                    variant="primary"
-                    style={{ marginTop: '16px', width: '100%' }}
-                    onClick={() => navigate('/my-bookings')}
-                  >
-                    View Offer
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <UserCheck size={18} className="text-accent" />
-                    <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>You're in Queue</span>
-                  </div>
-                  <h3 style={{ fontSize: '2rem', margin: '8px 0' }} className="text-accent">
-                    #{waitlistEntry.positionInLine}
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    Your current position in line. We will notify you via email when a seat becomes available.
+            {isPastEvent ? (
+              <div className="glass-card" style={{ position: 'sticky', top: '90px', borderLeft: '4px solid var(--color-booked)' }}>
+                <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <AlertCircle size={36} className="text-danger" style={{ marginBottom: '12px' }} />
+                  <h3>Booking Closed</h3>
+                  <p className="text-muted" style={{ fontSize: '0.9rem', marginTop: '8px', lineHeight: '1.5' }}>
+                    This event has already started or ended. Seat booking and waitlist registration are no longer active.
                   </p>
                   <Button
                     variant="secondary"
-                    loading={leavingWaitlist}
-                    onClick={handleLeaveWaitlist}
-                    style={{ marginTop: '16px', width: '100%', padding: '10px' }}
+                    style={{ width: '100%', marginTop: '24px' }}
+                    onClick={() => navigate('/')}
                   >
-                    Leave Waitlist
+                    Back to Explore
                   </Button>
                 </div>
-              )}
-            </div>
-          ) : (
-            <Button
-              variant="accent"
-              loading={joiningWaitlist}
-              onClick={handleJoinWaitlist}
-              style={{ padding: '14px 32px' }}
-            >
-              Join the Waitlist
-            </Button>
-          )}
+              </div>
+            ) : hasSeatsAvailable ? (
+              <div className="glass-card" style={{ position: 'sticky', top: '90px' }}>
+                <h3 style={{ borderBottom: '1px solid var(--border-main)', paddingBottom: '12px', marginBottom: '16px' }}>
+                  Booking Summary
+                </h3>
+
+                {selectedSeats.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                    <Ticket size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
+                    <p>No seats selected yet</p>
+                    <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Click available seats on the map to select (up to 10).</p>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Selected Seats List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', maxHeight: '200px', overflowY: 'auto' }}>
+                      {selectedSeats.map((seat) => (
+                        <div key={seat.id} className="flex-between" style={{
+                          padding: '10px 14px',
+                          background: 'rgba(255,255,255,0.02)',
+                          border: '1px solid var(--border-main)',
+                          borderRadius: '6px'
+                        }}>
+                          <div>
+                            <span style={{ fontWeight: 700 }}>Seat {seat.seatNumber}</span>
+                            <span style={{ fontSize: '0.75rem', marginLeft: '8px' }} className={
+                              seat.category === 'VIP' ? 'text-warning' : seat.category === 'PREMIUM' ? 'text-accent' : 'text-muted'
+                            }>
+                              ({seat.category})
+                            </span>
+                          </div>
+                          <span className="mono-text" style={{ fontWeight: 600 }}>₹{seat.price}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Total pricing */}
+                    <div style={{
+                      borderTop: '1px solid var(--border-main)',
+                      paddingTop: '16px',
+                      marginBottom: '24px'
+                    }}>
+                      <div className="flex-between" style={{ marginBottom: '8px' }}>
+                        <span className="text-muted">Total Tickets</span>
+                        <span>{selectedSeats.length}</span>
+                      </div>
+                      <div className="flex-between">
+                        <span style={{ fontWeight: 600 }}>Grand Total</span>
+                        <span className="mono-text" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>
+                          ₹{totalPrice.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleBookSeats}
+                      loading={bookingLoading}
+                      style={{ width: '100%', padding: '14px' }}
+                    >
+                      {isAuthenticated ? 'Confirm & Hold Seats' : 'Login to Book Seats'}
+                    </Button>
+                    
+                    <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                      <Clock size={12} />
+                      Holding seats creates a temporary 10-minute hold.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Event Sold Out — Waitlist options */
+              <div className="glass-card" style={{
+                padding: '40px',
+                textAlign: 'center',
+                maxWidth: '600px',
+                margin: '0 auto',
+                borderLeft: '4px solid var(--accent)'
+              }}>
+                <Info size={36} className="text-accent" style={{ marginBottom: '16px' }} />
+                <h2>This Event is Sold Out</h2>
+                <p className="text-muted" style={{ marginTop: '8px', marginBottom: '24px', fontSize: '1rem', lineHeight: '1.5' }}>
+                  All physical seats are currently booked or held by other users. Join our automated waitlist to secure a spot if anyone cancels or their hold expires.
+                </p>
+
+                {waitlistEntry ? (
+                  <div style={{
+                    background: 'rgba(99, 102, 241, 0.08)',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    maxWidth: '400px',
+                    margin: '0 auto'
+                  }}>
+                    {waitlistEntry.status === 'OFFERED' ? (
+                      <div>
+                        <span className="badge badge-warning" style={{ marginBottom: '8px' }}>Seat Offered!</span>
+                        <p style={{ fontWeight: 600 }}>We have offered you Seat {waitlistEntry.offeredSeatNumber}!</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Go to your Bookings page immediately to accept the offer before it expires.
+                        </p>
+                        <Button
+                          variant="primary"
+                          style={{ marginTop: '16px', width: '100%' }}
+                          onClick={() => navigate('/my-bookings')}
+                        >
+                          View Offer
+                        </Button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <UserCheck size={18} className="text-accent" />
+                          <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>You're in Queue</span>
+                        </div>
+                        <h3 style={{ fontSize: '2rem', margin: '8px 0' }} className="text-accent">
+                          #{waitlistEntry.positionInLine}
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                          Your current position in line. We will notify you via email when a seat becomes available.
+                        </p>
+                        <Button
+                          variant="secondary"
+                          loading={leavingWaitlist}
+                          onClick={handleLeaveWaitlist}
+                          style={{ marginTop: '16px', width: '100%', padding: '10px' }}
+                        >
+                          Leave Waitlist
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant="accent"
+                    loading={joiningWaitlist}
+                    onClick={handleJoinWaitlist}
+                    style={{ padding: '14px 32px' }}
+                  >
+                    Join the Waitlist
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

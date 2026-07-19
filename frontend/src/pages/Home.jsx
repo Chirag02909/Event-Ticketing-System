@@ -23,7 +23,10 @@ export const Home = () => {
     setLoadingEvents(true);
     try {
       const res = await api.get('/events');
-      setEvents(res.data || []);
+      const activeEvents = (res.data || []).filter(
+        (evt) => new Date(evt.eventDate) > new Date()
+      );
+      setEvents(activeEvents);
     } catch (err) {
       console.error('Error fetching events:', err);
     } finally {
@@ -35,7 +38,10 @@ export const Home = () => {
     setLoadingTrending(true);
     try {
       const res = await api.get('/events/trending?limit=4');
-      setTrendingEvents(res.data || []);
+      const activeTrending = (res.data || []).filter(
+        (item) => new Date(item.eventDate) > new Date()
+      );
+      setTrendingEvents(activeTrending);
     } catch (err) {
       console.error('Error fetching trending:', err);
     } finally {
