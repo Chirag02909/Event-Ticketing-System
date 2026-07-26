@@ -85,8 +85,11 @@ public class ReservationServiceImpl implements ReservationService {
                         + " does not belong to this event."));
             }
 
-            // Seat must be AVAILABLE — reject HELD or BOOKED immediately
-            if (!"AVAILABLE".equals(seat.getStatus())) {
+            // Seat must be AVAILABLE or already HELD by the same user
+            boolean isAvailable = "AVAILABLE".equals(seat.getStatus());
+            boolean isHeldBySameUser = "HELD".equals(seat.getStatus()) && user.getId().equals(seat.getHeldBy());
+
+            if (!isAvailable && !isHeldBySameUser) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(errorResponse("Seat " + seat.getSeatNumber()
                         + " is no longer available."));

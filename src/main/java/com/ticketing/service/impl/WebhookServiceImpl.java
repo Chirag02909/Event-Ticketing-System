@@ -95,22 +95,23 @@ public class WebhookServiceImpl implements WebhookService {
         System.out.println("[WebhookService] Received event: " + eventType);
 
 // ── Step 3: Route by event type ───────────────────────────────────
-        return switch (eventType) {
+        switch (eventType) {
+            case "payment.captured":
+                return handlePaymentCaptured(payload);
 
-            case "payment.captured" -> handlePaymentCaptured(payload);
+            case "payment.failed":
+                return handlePaymentFailed(payload);
 
-            case "payment.failed" -> handlePaymentFailed(payload);
+            case "refund.processed":
+                return handleRefundProcessed(payload);
 
-            case "refund.processed" -> handleRefundProcessed(payload);
+            case "refund.failed":
+                return handleRefundFailed(payload);
 
-            case "refund.failed"    -> handleRefundFailed(payload);
-
-            default -> {
-
+            default:
                 // Razorpay sends many event types
                 // (refund.created, order.paid, etc.)
                 // Acknowledge unknown events with 200.
-
                 System.out.println(
                         "[WebhookService] Unhandled event type: "
                                 + eventType
@@ -121,9 +122,8 @@ public class WebhookServiceImpl implements WebhookService {
                 response.setStatus(true);
                 response.setMessage("Event acknowledged.");
 
-                yield ResponseEntity.ok(response);
-            }
-        };
+                return ResponseEntity.ok(response);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
