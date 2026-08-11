@@ -134,6 +134,12 @@ public class RefundServiceImpl implements RefundService {
                 refundRequest.put("notes", notes);
             }
 
+            System.out.println("========== RAZORPAY REFUND DEBUG ==========");
+            System.out.println("Razorpay Payment ID: " + payment.getRazorpayPaymentId());
+            System.out.println("Database Amount: " + payment.getAmount());
+            System.out.println("Refund Amount Paise: " + amountInPaise);
+            System.out.println("===========================================");
+
             Refund refund = razorpayClient.payments.refund(
                 payment.getRazorpayPaymentId(), refundRequest
             );

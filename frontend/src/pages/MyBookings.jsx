@@ -24,10 +24,12 @@ export const MyBookings = () => {
     setLoading(true);
     try {
       const bookingsRes = await api.get('/bookings/my');
-      setBookings(bookingsRes.data || []);
+      const sortedBookings = (bookingsRes.data || []).sort((a, b) => b.id - a.id);
+      setBookings(sortedBookings);
 
       const waitlistRes = await api.get('/waitlist/my');
-      setWaitlist(waitlistRes.data || []);
+      const sortedWaitlist = (waitlistRes.data || []).sort((a, b) => b.entryId - a.entryId);
+      setWaitlist(sortedWaitlist);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError('Could not load bookings. Please sign in again.');
