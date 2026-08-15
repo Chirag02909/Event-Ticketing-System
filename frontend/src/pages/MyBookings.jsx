@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Button from '../components/Button';
-import { Ticket, Calendar, Clock, RotateCcw, HelpCircle, XCircle, CheckCircle, RefreshCw, LogOut, Info } from 'lucide-react';
+import { Ticket, Calendar, Clock, RotateCcw, HelpCircle, XCircle, CheckCircle, RefreshCw, LogOut, Info, Download } from 'lucide-react';
+import { downloadTicket } from '../utils/ticketGenerator';
 
 export const MyBookings = () => {
   const navigate = useNavigate();
@@ -304,14 +305,24 @@ export const MyBookings = () => {
                       )}
 
                       {booking.status === 'CONFIRMED' && (
-                        <Button
-                          variant="secondary"
-                          style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          onClick={() => handleOpenRefundModal(booking.id)}
-                        >
-                          <RotateCcw size={12} />
-                          Request Refund
-                        </Button>
+                        <>
+                          <Button
+                            variant="primary"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => downloadTicket(booking)}
+                          >
+                            <Download size={12} />
+                            Download Ticket
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenRefundModal(booking.id)}
+                          >
+                            <RotateCcw size={12} />
+                            Request Refund
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

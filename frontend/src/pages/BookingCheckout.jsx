@@ -4,7 +4,8 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useRazorpay } from '../hooks/useRazorpay';
 import Button from '../components/Button';
-import { AlertCircle, Clock, CheckCircle2, CreditCard, Ticket, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Clock, CheckCircle2, CreditCard, Ticket, ArrowLeft, ShieldAlert, Download } from 'lucide-react';
+import { downloadTicket } from '../utils/ticketGenerator';
 
 export const BookingCheckout = () => {
   const { id } = useParams();
@@ -293,13 +294,19 @@ export const BookingCheckout = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Button variant="secondary" style={{ flex: 1 }} onClick={() => navigate('/')}>
-              Browse More
+          <div style={{ display: 'flex', gap: '16px', flexDirection: 'column' }}>
+            <Button variant="primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => downloadTicket(booking)}>
+              <Download size={16} />
+              Download Ticket
             </Button>
-            <Button variant="primary" style={{ flex: 1 }} onClick={() => navigate('/my-bookings')}>
-              Go to Bookings
-            </Button>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <Button variant="secondary" style={{ flex: 1 }} onClick={() => navigate('/')}>
+                Browse More
+              </Button>
+              <Button variant="secondary" style={{ flex: 1 }} onClick={() => navigate('/my-bookings')}>
+                Go to Bookings
+              </Button>
+            </div>
           </div>
         </div>
       </div>
