@@ -352,7 +352,7 @@ export const OrganiserDashboard = () => {
                               Cancel Show
                             </Button>
                           )}
-                          {evt.status === 'PUBLISHED' && (
+                          {(evt.status === 'PUBLISHED' || evt.status === 'COMPLETED') && (
                             <Button
                               variant="secondary"
                               style={{ padding: '6px 12px', fontSize: '0.8rem' }}

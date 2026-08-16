@@ -399,7 +399,19 @@ public class EventServiceImpl implements EventService {
         dto.setTitle(event.getTitle());
         dto.setDescription(event.getDescription());
         dto.setEventDate(event.getEventDate());
-        dto.setStatus(event.getStatus());
+
+        // Derive effective status: if the event is PUBLISHED but its date has
+        // already passed, expose it as COMPLETED in the response without
+        // persisting the change. This keeps the DB clean while ensuring the
+        // organiser dashboard (and any other consumer) always sees the right label.
+        String effectiveStatus = event.getStatus();
+        if ("PUBLISHED".equals(effectiveStatus)
+                && event.getEventDate() != null
+                && event.getEventDate().isBefore(java.time.LocalDateTime.now())) {
+            effectiveStatus = "COMPLETED";
+        }
+        dto.setStatus(effectiveStatus);
+
         dto.setOrganiserId(event.getOrganiserId());
         dto.setCreatedAt(event.getCreatedAt());
         dto.setAvailableSeats(availableSeats);
