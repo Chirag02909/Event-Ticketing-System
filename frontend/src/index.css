@@ -4,7 +4,7 @@
 :root {
   /* HSL Color Tokens */
   /* --bg-main: hsl(222, 25%, 6%); */
-  --bg-main: hsl(225, 3%, 31%);
+  --bg-main: hsl(222, 25%, 6%);
   --bg-card: hsl(222, 22%, 10%);
   --bg-card-hover: hsl(222, 20%, 14%);
   --bg-popup: hsl(222, 25%, 8%);
